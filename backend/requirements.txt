@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+langchain
+langchain-classic
+langchain-anthropic
+langchain-community
+langchain-huggingface
+chromadb
+sentence-transformers
+anthropic
+pydantic
+python-dotenv
+requests

@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "CodeLens",
+  "version": "1.0.0",
+  "description": "Hover any button and press Ctrl+Shift+E to see an AI-powered explanation of what it does, sourced from your codebase.",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "http://localhost:3000/*",
+    "http://localhost:8000/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["http://localhost:3000/*"],
+      "js": ["panel.js", "setup.js", "content.js"],
+      "css": ["panel.css"]
+    }
+  ]
+}

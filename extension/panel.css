@@ -1,0 +1,605 @@
+/* CodeLens — Perspective design system, spatial-glass direction
+   Reference: visionOS-style floating glass panes — frosted translucent
+   surfaces, hairline light borders, soft diffuse shadows, large radii,
+   quiet monochrome chrome. Depth comes from layered translucency, not
+   extruded shadows.
+
+   Tokens: primary #00BD7D (reserved for focus rings + status accents)
+   Fonts: serif display for the wordmark (New York / Georgia, matching the
+   reference's "ART VR"), system sans (SF Pro) for UI, JetBrains Mono for code.
+   Spacing scale: 4/8/12/16/24/32 · Type scale: 12/14/16/20/24/32
+
+   Contrast note: the glass tint is kept at ~0.72 opacity so light text holds
+   WCAG AA regardless of the page behind the blur. */
+
+#codelens-panel,
+.codelens-setup-menu {
+  /* color tokens — dark smoke glass with light ink */
+  --cl-primary: #00BD7D;
+  --cl-success: #4ADE80;
+  --cl-warning: #FBBF24;
+  --cl-danger: #F87171;
+  --cl-glass: rgba(38, 40, 44, 0.72);
+  --cl-glass-raised: rgba(255, 255, 255, 0.10);
+  --cl-glass-sunken: rgba(0, 0, 0, 0.22);
+  --cl-hairline: rgba(255, 255, 255, 0.18);
+  --cl-hairline-strong: rgba(255, 255, 255, 0.30);
+  --cl-text: rgba(255, 255, 255, 0.96);
+  --cl-text-muted: rgba(255, 255, 255, 0.62);
+  --cl-text-faint: rgba(255, 255, 255, 0.45);
+
+  /* type tokens */
+  --cl-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+    "Inter", sans-serif;
+  --cl-font-display: "New York", "Playfair Display", Georgia, "Times New Roman",
+    serif;
+  --cl-font-mono: "SF Mono", "JetBrains Mono", "Fira Code", monospace;
+
+  /* spacing tokens */
+  --cl-space-1: 4px;
+  --cl-space-2: 8px;
+  --cl-space-3: 12px;
+  --cl-space-4: 16px;
+  --cl-space-5: 24px;
+  --cl-space-6: 32px;
+
+  /* glass material */
+  --cl-blur: blur(28px) saturate(1.6);
+  --cl-radius: 28px;
+  --cl-radius-md: 18px;
+  --cl-radius-pill: 999px;
+
+  /* depth: soft diffuse shadows only — no hard offsets */
+  --cl-float:
+    0 0 0 0.5px rgba(255, 255, 255, 0.08),
+    0 12px 32px rgba(0, 0, 0, 0.30),
+    0 32px 80px rgba(0, 0, 0, 0.25);
+  --cl-float-high:
+    0 0 0 0.5px rgba(255, 255, 255, 0.10),
+    0 24px 56px rgba(0, 0, 0, 0.38),
+    0 56px 120px rgba(0, 0, 0, 0.30);
+
+  --cl-ease-out: cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+/* ---------------------------------------------------------------- panel */
+
+#codelens-panel {
+  /* fixed: anchored to the viewport so the panel can never extend the
+     page and create scrollable dead space below the app */
+  position: fixed;
+  z-index: 999999;
+  width: 440px;
+  max-height: 80vh;
+  overflow-y: auto;
+  background: var(--cl-glass);
+  -webkit-backdrop-filter: var(--cl-blur);
+  backdrop-filter: var(--cl-blur);
+  color: var(--cl-text);
+  border: 1px solid var(--cl-hairline);
+  border-radius: var(--cl-radius);
+  box-shadow: var(--cl-float);
+  font-family: var(--cl-font);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  opacity: 0;
+  transform: scale(0.97) translateY(10px);
+  transform-origin: top center;
+  animation: codelens-rise-in 260ms var(--cl-ease-out) forwards;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+}
+
+@keyframes codelens-rise-in {
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #codelens-panel,
+  #codelens-setup,
+  .codelens-loading,
+  .codelens-setup-indexing {
+    animation-duration: 1ms;
+    animation-iteration-count: 1;
+  }
+  .codelens-snippet,
+  .codelens-issue,
+  .codelens-save,
+  .codelens-close,
+  .codelens-input,
+  .codelens-doc-link {
+    transition: none;
+  }
+}
+
+/* -------------------------------------------------------------- header */
+
+.codelens-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--cl-space-4) var(--cl-space-5);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: rgba(38, 40, 44, 0.55);
+  -webkit-backdrop-filter: var(--cl-blur);
+  backdrop-filter: var(--cl-blur);
+  border-bottom: 1px solid var(--cl-hairline);
+  border-radius: var(--cl-radius) var(--cl-radius) 0 0;
+}
+
+/* serif wordmark, wide-tracked — matches the reference "ART VR" */
+.codelens-title {
+  font-family: var(--cl-font-display);
+  font-weight: 600;
+  font-size: 20px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--cl-text);
+}
+
+.codelens-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: var(--cl-glass-raised);
+  border: 1px solid var(--cl-hairline);
+  border-radius: var(--cl-radius-pill);
+  color: var(--cl-text-muted);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.codelens-close:hover {
+  background: rgba(255, 255, 255, 0.20);
+  color: var(--cl-text);
+}
+
+.codelens-close:active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.codelens-close:focus-visible,
+.codelens-doc-link:focus-visible,
+.codelens-issue-key:focus-visible {
+  outline: 2px solid var(--cl-primary);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ---------------------------------------------------------------- body */
+
+.codelens-body {
+  padding: var(--cl-space-5);
+}
+
+.codelens-section {
+  margin-bottom: var(--cl-space-6);
+}
+
+.codelens-section:last-child {
+  margin-bottom: 0;
+}
+
+/* quiet wide-tracked small caps — like the reference subtitle */
+.codelens-section-label {
+  font-family: var(--cl-font);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  color: var(--cl-text-faint);
+  margin-bottom: var(--cl-space-3);
+}
+
+.codelens-text {
+  margin: 0;
+  color: var(--cl-text);
+  font-weight: 300;
+}
+
+.codelens-loading {
+  font-family: var(--cl-font-mono);
+  font-size: 12px;
+  color: var(--cl-text-muted);
+  animation: codelens-pulse 1.2s ease-in-out infinite;
+  padding: var(--cl-space-2) 0;
+}
+
+@keyframes codelens-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.codelens-error {
+  color: var(--cl-danger);
+  background: rgba(248, 113, 113, 0.10);
+  border: 1px solid rgba(248, 113, 113, 0.30);
+  border-radius: var(--cl-radius-md);
+  padding: var(--cl-space-3) var(--cl-space-4);
+}
+
+/* ------------------------------------------------------------ endpoint */
+
+.codelens-endpoint {
+  display: flex;
+  align-items: center;
+  gap: var(--cl-space-2);
+}
+
+/* method badges: tinted glass pills */
+.codelens-badge {
+  display: inline-block;
+  padding: 2px var(--cl-space-3);
+  border-radius: var(--cl-radius-pill);
+  font-family: var(--cl-font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid;
+}
+
+.codelens-badge-post {
+  color: var(--cl-success);
+  background: rgba(74, 222, 128, 0.12);
+  border-color: rgba(74, 222, 128, 0.35);
+}
+
+.codelens-badge-get {
+  color: #93C5FD;
+  background: rgba(147, 197, 253, 0.12);
+  border-color: rgba(147, 197, 253, 0.35);
+}
+
+.codelens-badge-put {
+  color: var(--cl-warning);
+  background: rgba(251, 191, 36, 0.12);
+  border-color: rgba(251, 191, 36, 0.35);
+}
+
+.codelens-badge-delete {
+  color: var(--cl-danger);
+  background: rgba(248, 113, 113, 0.12);
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+.codelens-badge-patch {
+  color: #C4B5FD;
+  background: rgba(196, 181, 253, 0.12);
+  border-color: rgba(196, 181, 253, 0.35);
+}
+
+.codelens-endpoint-path {
+  font-family: var(--cl-font-mono);
+  font-size: 13px;
+  color: var(--cl-text);
+}
+
+/* --------------------------------------------------------------- files */
+
+.codelens-files {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.codelens-file {
+  font-family: var(--cl-font-mono);
+  font-size: 12px;
+  padding: var(--cl-space-1) var(--cl-space-2);
+  border-radius: 8px;
+  color: var(--cl-text-muted);
+}
+
+.codelens-file:hover {
+  background: var(--cl-glass-raised);
+  color: var(--cl-text);
+}
+
+/* --------------------------------------------------------------- steps */
+
+.codelens-steps {
+  margin: 0;
+  padding-left: var(--cl-space-5);
+  font-weight: 300;
+}
+
+.codelens-steps li {
+  margin-bottom: var(--cl-space-2);
+}
+
+.codelens-steps li::marker {
+  color: var(--cl-text-faint);
+}
+
+/* ------------------------------------------------------------ snippets */
+
+/* snippet cards: raised glass panes floating on the sheet */
+.codelens-snippet {
+  margin-bottom: var(--cl-space-4);
+  background: var(--cl-glass-raised);
+  border: 1px solid var(--cl-hairline);
+  border-radius: var(--cl-radius-md);
+  overflow: hidden;
+  transition: background 200ms ease, transform 200ms var(--cl-ease-out),
+    box-shadow 200ms var(--cl-ease-out);
+}
+
+.codelens-snippet:hover {
+  background: rgba(255, 255, 255, 0.14);
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+}
+
+.codelens-snippet:last-child {
+  margin-bottom: 0;
+}
+
+.codelens-snippet-file {
+  font-family: var(--cl-font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--cl-text-muted);
+  padding: var(--cl-space-2) var(--cl-space-4);
+  border-bottom: 1px solid var(--cl-hairline);
+}
+
+.codelens-snippet-code {
+  margin: 0;
+  padding: var(--cl-space-3) var(--cl-space-4);
+  background: var(--cl-glass-sunken);
+  overflow-x: auto;
+}
+
+.codelens-snippet-code code {
+  font-family: var(--cl-font-mono);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.88);
+  white-space: pre;
+}
+
+.codelens-snippet-explanation {
+  padding: var(--cl-space-2) var(--cl-space-4);
+  font-size: 12px;
+  font-weight: 300;
+  color: var(--cl-text-muted);
+  border-top: 1px solid var(--cl-hairline);
+}
+
+/* ---------------------------------------------------------- setup menu */
+
+#codelens-setup {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  background: rgba(0, 0, 0, 0.35);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  animation: codelens-fade-in 180ms ease forwards;
+}
+
+@keyframes codelens-fade-in {
+  to { opacity: 1; }
+}
+
+.codelens-setup-menu {
+  width: 480px;
+  max-height: 85vh;
+  overflow-y: auto;
+  background: var(--cl-glass);
+  -webkit-backdrop-filter: var(--cl-blur);
+  backdrop-filter: var(--cl-blur);
+  color: var(--cl-text);
+  border: 1px solid var(--cl-hairline);
+  border-radius: var(--cl-radius);
+  box-shadow: var(--cl-float-high);
+  font-family: var(--cl-font);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+}
+
+/* inputs: recessed glass wells, pill-shaped like the reference cards */
+.codelens-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: var(--cl-space-2);
+  padding: var(--cl-space-3) var(--cl-space-4);
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--cl-text);
+  border: 1px solid var(--cl-hairline);
+  border-radius: var(--cl-radius-md);
+  font-family: var(--cl-font-mono);
+  font-size: 12px;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.codelens-input:hover {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: var(--cl-hairline-strong);
+}
+
+.codelens-input:focus {
+  outline: 2px solid var(--cl-primary);
+  outline-offset: 1px;
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.10);
+}
+
+.codelens-input::placeholder {
+  color: var(--cl-text-faint);
+}
+
+select.codelens-input {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='white' stroke-opacity='0.6' stroke-width='1.5' stroke-linecap='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  cursor: pointer;
+}
+
+select.codelens-input option {
+  background: #26282C;
+  color: #FFFFFF;
+}
+
+/* primary action: frosted light pill — brightest plane on the sheet */
+.codelens-save {
+  width: 100%;
+  padding: var(--cl-space-3) var(--cl-space-4);
+  background: rgba(255, 255, 255, 0.90);
+  color: #1A1C1F;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: var(--cl-radius-pill);
+  font-family: var(--cl-font);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  transition: background 150ms ease, transform 150ms var(--cl-ease-out),
+    box-shadow 150ms var(--cl-ease-out);
+}
+
+.codelens-save:hover {
+  background: #FFFFFF;
+  transform: translateY(-1px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.30);
+}
+
+.codelens-save:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.codelens-save:focus-visible {
+  outline: 2px solid var(--cl-primary);
+  outline-offset: 2px;
+}
+
+.codelens-save:disabled {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--cl-text-faint);
+  border-color: var(--cl-hairline);
+  cursor: default;
+  box-shadow: none;
+  transform: none;
+}
+
+.codelens-setup-status {
+  min-height: 18px;
+  margin-bottom: var(--cl-space-3);
+  font-family: var(--cl-font-mono);
+  font-size: 12px;
+}
+
+.codelens-setup-indexing {
+  color: var(--cl-text-muted);
+  animation: codelens-pulse 1.2s ease-in-out infinite;
+}
+
+.codelens-setup-ready { color: var(--cl-success); }
+.codelens-setup-error { color: var(--cl-danger); }
+
+/* ---------------------------------------------------------------- docs */
+
+.codelens-doc {
+  margin-bottom: var(--cl-space-2);
+}
+
+.codelens-doc-link {
+  color: var(--cl-text);
+  text-decoration: underline;
+  text-decoration-color: var(--cl-hairline-strong);
+  text-underline-offset: 3px;
+  font-size: 13px;
+  font-weight: 400;
+  transition: text-decoration-color 150ms ease;
+}
+
+.codelens-doc-link:hover {
+  text-decoration-color: var(--cl-text);
+}
+
+.codelens-doc-note {
+  color: var(--cl-text-muted);
+  font-size: 12px;
+  font-weight: 300;
+  margin-top: var(--cl-space-1);
+}
+
+/* -------------------------------------------------------- known issues */
+
+.codelens-issue {
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.25);
+  border-radius: var(--cl-radius-md);
+  padding: var(--cl-space-3) var(--cl-space-4);
+  margin-bottom: var(--cl-space-2);
+  transition: background 200ms ease;
+}
+
+.codelens-issue:hover {
+  background: rgba(248, 113, 113, 0.12);
+}
+
+.codelens-issue-header {
+  display: flex;
+  align-items: center;
+  gap: var(--cl-space-2);
+  margin-bottom: var(--cl-space-1);
+}
+
+.codelens-issue-key {
+  font-family: var(--cl-font-mono);
+  font-weight: 600;
+  color: var(--cl-danger);
+  text-decoration: none;
+}
+
+.codelens-issue-key:hover {
+  text-decoration: underline;
+}
+
+.codelens-issue-status {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  padding: 1px var(--cl-space-2);
+  border-radius: var(--cl-radius-pill);
+  background: var(--cl-glass-raised);
+  border: 1px solid var(--cl-hairline);
+  color: var(--cl-text-muted);
+}
+
+.codelens-issue-summary {
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--cl-text);
+}
+
+.codelens-issue-assessment {
+  margin-top: var(--cl-space-1);
+  font-size: 12px;
+  font-weight: 300;
+  color: var(--cl-text-muted);
+  border-left: 2px solid rgba(248, 113, 113, 0.4);
+  padding-left: var(--cl-space-2);
+}
