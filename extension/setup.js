@@ -136,17 +136,62 @@ function showSetupMenu() {
   // was reloaded after this content script was injected — skip prefill then.
   try {
     chrome.storage.local.get("codelensSetup", ({ codelensSetup }) => {
-      if (chrome.runtime.lastError || !codelensSetup) return;
-      for (const [key, value] of Object.entries(codelensSetup)) {
-        if (fields[key] && value) fields[key].value = value;
+      if (!chrome.runtime.lastError && codelensSetup) {
+        for (const [key, value] of Object.entries(codelensSetup)) {
+          if (fields[key] && value) fields[key].value = value;
+        }
+        fields.repo_provider.dispatchEvent(new Event("change"));
       }
-      fields.repo_provider.dispatchEvent(new Event("change"));
+      prefillFromBackend(fields);
     });
   } catch (err) {
-    setStatus(status, "error", "Extension was reloaded — refresh this page to restore saved settings.");
+    prefillFromBackend(fields);
   }
 
   fetchStatus(status);
+}
+
+async function prefillFromBackend(fields) {
+  // The backend's saved config is the source of truth: without this, a fresh
+  // browser profile shows blank fields and saving would wipe the saved setup.
+  let config;
+  try {
+    const res = await fetch(`${CODELENS_BACKEND}/config`);
+    config = (await res.json()).config || {};
+  } catch (err) {
+    return;
+  }
+
+  const fill = (key, value) => {
+    if (value && !fields[key].value) fields[key].value = value;
+  };
+  const markSavedToken = (key, hasToken) => {
+    if (hasToken && !fields[key].value) {
+      fields[key].placeholder = "Token saved — leave blank to keep it";
+    }
+  };
+
+  const repo = config.github || config.gitlab;
+  if (repo) {
+    fields.repo_provider.value = config.github ? "github" : "gitlab";
+    fields.repo_provider.dispatchEvent(new Event("change"));
+    fill("repo_base", repo.base_url);
+    fill("repo_project", repo.project);
+    fill("repo_ref", repo.ref);
+    markSavedToken("repo_token", repo.has_token);
+  }
+  if (config.confluence) {
+    fill("cf_base", config.confluence.base_url);
+    fill("cf_email", config.confluence.email);
+    fill("cf_space", config.confluence.space);
+    markSavedToken("cf_token", config.confluence.has_token);
+  }
+  if (config.jira) {
+    fill("jr_base", config.jira.base_url);
+    fill("jr_email", config.jira.email);
+    fill("jr_project", config.jira.project);
+    markSavedToken("jr_token", config.jira.has_token);
+  }
 }
 
 async function fetchStatus(statusEl) {
@@ -157,6 +202,14 @@ async function fetchStatus(statusEl) {
   } catch (err) {
     setStatus(statusEl, "error", "Backend not reachable on port 8000.");
   }
+}
+
+function closeSetupSoon(statusEl) {
+  // Let the user see the success status, then close the menu.
+  setTimeout(() => {
+    const overlay = document.getElementById("codelens-setup");
+    if (overlay && overlay.contains(statusEl)) overlay.remove();
+  }, 1200);
 }
 
 function setStatus(statusEl, state, text) {
@@ -227,6 +280,7 @@ async function saveSetup(fields, statusEl, saveBtn) {
     }
     setStatus(statusEl, data.index.state, data.index.detail || "Saved.");
     saveBtn.disabled = false;
+    if (data.index.state === "ready") closeSetupSoon(statusEl);
   } catch (err) {
     setStatus(statusEl, "error", "Backend not reachable. Is the FastAPI server running on port 8000?");
     saveBtn.disabled = false;
@@ -242,6 +296,7 @@ function pollUntilReady(statusEl, saveBtn) {
       if (data.state === "ready" || data.state === "error") {
         clearInterval(interval);
         saveBtn.disabled = false;
+        if (data.state === "ready") closeSetupSoon(statusEl);
       }
     } catch (err) {
       clearInterval(interval);

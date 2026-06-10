@@ -30,9 +30,21 @@ document.addEventListener("keydown", async (e) => {
   const requestId = `codelens-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const context = {
     testid: button.getAttribute("data-testid") || "",
-    label: (button.innerText || "").trim(),
+    label:
+      (button.innerText || "").trim() ||
+      button.getAttribute("aria-label") ||
+      button.title ||
+      "",
     route: window.location.pathname,
     request_id: requestId,
+    // Icon-only buttons have no label — give the agent the markup and the
+    // surrounding row text so it can still identify the button.
+    html: button.outerHTML.slice(0, 600),
+    surrounding_text: (
+      button.closest("li, tr, article, [class*='task'], [class*='card'], [class*='row']") || button.parentElement || button
+    ).innerText
+      .trim()
+      .slice(0, 200),
   };
 
   const controller = new AbortController();

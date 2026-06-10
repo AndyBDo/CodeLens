@@ -134,27 +134,31 @@ def search_tickets(query: str) -> str:
     if not base_url:
         return "Jira is not configured."
 
-    jql = f'text ~ "{query}"'
-    if jira.get("project"):
-        jql += f' and project = "{jira["project"]}"'
-    jql += " order by updated desc"
+    project_filter = f' and project = "{jira["project"]}"' if jira.get("project") else ""
 
-    try:
-        response = requests.get(
-            f"{base_url}/rest/api/3/search/jql",
-            params={"jql": jql, "maxResults": 5, "fields": "summary,status,priority,issuetype"},
-            auth=(jira.get("email", ""), jira.get("token", "")),
-            timeout=30,
-        )
+    # Like Confluence CQL, JQL `text ~ "..."` treats multi-word queries as a
+    # phrase. Try the phrase first, then fall back to OR-ing individual words.
+    words = [w for w in query.replace('"', "").split() if w]
+    candidates = [f'text ~ "{query}"' + project_filter + " order by updated desc"]
+    if len(words) > 1:
+        per_word = " or ".join(f'text ~ "{w}"' for w in words)
+        candidates.append(f"({per_word})" + project_filter + " order by updated desc")
+
+    def run_search(jql):
+        params = {"jql": jql, "maxResults": 5, "fields": "summary,status,priority,issuetype"}
+        auth = (jira.get("email", ""), jira.get("token", ""))
+        response = requests.get(f"{base_url}/rest/api/3/search/jql", params=params, auth=auth, timeout=30)
         if response.status_code == 404:
-            response = requests.get(
-                f"{base_url}/rest/api/3/search",
-                params={"jql": jql, "maxResults": 5, "fields": "summary,status,priority,issuetype"},
-                auth=(jira.get("email", ""), jira.get("token", "")),
-                timeout=30,
-            )
+            response = requests.get(f"{base_url}/rest/api/3/search", params=params, auth=auth, timeout=30)
         response.raise_for_status()
-        issues = response.json().get("issues", [])
+        return response.json().get("issues", [])
+
+    issues = []
+    try:
+        for jql in candidates:
+            issues = run_search(jql)
+            if issues:
+                break
     except requests.RequestException as e:
         return f"Jira search failed: {e}"
 

@@ -1,5 +1,6 @@
 import os
 import threading
+from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
@@ -35,6 +36,8 @@ class AnalyzeRequest(BaseModel):
     label: str
     route: str
     request_id: str = ""
+    html: str = ""
+    surrounding_text: str = ""
 
 
 class CancelRequest(BaseModel):
@@ -67,6 +70,17 @@ class ConfigureRequest(BaseModel):
     gitlab: RepoConfig | None = None
     confluence: ConfluenceConfig | None = None
     jira: JiraConfig | None = None
+
+
+def _site_root(url: str) -> str:
+    """Reduce a pasted Confluence/Jira link (board, backlog, wiki page) to the site root."""
+    url = (url or "").strip()
+    if not url:
+        return url
+    if "://" not in url:
+        url = f"https://{url}"
+    parsed = urlparse(url)
+    return f"{parsed.scheme}://{parsed.netloc}"
 
 
 def _configured_repo(config: dict):
@@ -141,6 +155,15 @@ def configure(request: ConfigureRequest):
         "confluence": request.confluence.model_dump() if request.confluence else None,
         "jira": request.jira.model_dump() if request.jira else None,
     }
+    for section in ("confluence", "jira"):
+        if config[section]:
+            config[section]["base_url"] = _site_root(config[section]["base_url"])
+    # A blank token field means "keep the saved one" — the UI never echoes secrets back.
+    old_config = get_config()
+    for section in ("github", "gitlab", "confluence", "jira"):
+        old = old_config.get(section) or {}
+        if config[section] and not config[section].get("token") and old.get("token"):
+            config[section]["token"] = old["token"]
     save_config(config)
     reset_executor()
 
@@ -172,7 +195,14 @@ def analyze(request: AnalyzeRequest):
         return {"error": "Still indexing the repository — try again in a moment."}
     if index_status["state"] == "error":
         return {"error": index_status["detail"]}
-    return analyze_button(request.testid, request.label, request.route, request.request_id)
+    return analyze_button(
+        request.testid,
+        request.label,
+        request.route,
+        request.request_id,
+        request.html,
+        request.surrounding_text,
+    )
 
 
 @app.post("/cancel")

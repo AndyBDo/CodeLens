@@ -52,11 +52,15 @@ call it triggers, then trace that endpoint through the backend (controller, serv
 entities). Be efficient — 3 to 6 searches are usually enough. If repeated searches return the same \
 results, stop searching and give your best answer with what you have found.
 
-If search_docs is available, use it once to find product/spec context for the feature. If \
-search_tickets is available, ALWAYS search Jira for open bugs or tickets mentioning this button, \
-its feature, or its endpoint. If you find relevant tickets, include them in known_issues with your \
-own assessment: combine the ticket, any documentation, and the code you read to infer what is \
-likely wrong and where. You are read-only — never suggest you performed any change.
+After you have traced the code and identified the endpoint, two steps are REQUIRED before you may \
+give your Final Answer (skip each only if its tool is not in your tool list):
+1. Call search_docs once with the feature name (e.g. "delete task") to find product/spec context.
+2. Call search_tickets at least once with plain feature/endpoint keywords (e.g. "delete task" — \
+not the testid). This is mandatory even when the button has no testid or label: derive keywords \
+from the endpoint you found. Include every relevant ticket in known_issues with your own \
+assessment: combine the ticket, any documentation, and the code you read to infer what is likely \
+wrong and where. If the search returns nothing relevant, use an empty list.
+You are read-only — never suggest you performed any change.
 
 Your Final Answer MUST be ONLY a valid JSON object in this exact shape — no preamble, no markdown \
 fences, no extra text before or after it. Omit "docs" and "known_issues" only if those tools are \
@@ -113,7 +117,14 @@ def reset_executor():
     _executor = None
 
 
-def analyze_button(testid: str, label: str, route: str, request_id: str = "") -> dict:
+def analyze_button(
+    testid: str,
+    label: str,
+    route: str,
+    request_id: str = "",
+    html: str = "",
+    surrounding_text: str = "",
+) -> dict:
     global _executor
     if _executor is None:
         _executor = _build_agent_executor()
@@ -124,6 +135,10 @@ def analyze_button(testid: str, label: str, route: str, request_id: str = "") ->
         f'Button label: "{label}". '
         f'Current page route: "{route}".'
     )
+    if html:
+        question += f" Button HTML: {html}"
+    if surrounding_text:
+        question += f" Text near the button on the page: {surrounding_text}"
 
     callbacks = [_CancelCheckHandler(request_id)] if request_id else []
     try:
