@@ -117,57 +117,34 @@
   }
 }
 
-/* -------------------------------------------------------------- header */
+/* --------------------------------------------------------------- close */
 
-.codelens-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--cl-space-4) var(--cl-space-5);
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  background: rgba(38, 40, 44, 0.55);
-  -webkit-backdrop-filter: var(--cl-blur);
-  backdrop-filter: var(--cl-blur);
-  border-bottom: 1px solid var(--cl-hairline);
-  border-radius: var(--cl-radius) var(--cl-radius) 0 0;
-}
-
-/* serif wordmark, wide-tracked — matches the reference "ART VR" */
-.codelens-title {
-  font-family: var(--cl-font-display);
-  font-weight: 600;
-  font-size: 20px;
-  letter-spacing: 4px;
-  text-transform: uppercase;
-  color: var(--cl-text);
-}
-
+/* floating close button — sticks to the top-right of the pane */
 .codelens-close {
+  position: sticky;
+  top: var(--cl-space-3);
+  float: right;
+  margin: var(--cl-space-3) var(--cl-space-3) 0 0;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  background: var(--cl-glass-raised);
-  border: 1px solid var(--cl-hairline);
-  border-radius: var(--cl-radius-pill);
+  background: none;
+  border: none;
   color: var(--cl-text-muted);
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1;
   cursor: pointer;
   padding: 0;
-  transition: background 150ms ease, color 150ms ease;
+  transition: color 150ms ease;
 }
 
 .codelens-close:hover {
-  background: rgba(255, 255, 255, 0.20);
   color: var(--cl-text);
 }
 
 .codelens-close:active {
-  background: rgba(255, 255, 255, 0.08);
+  color: var(--cl-text-faint);
 }
 
 .codelens-close:focus-visible,
@@ -436,9 +413,8 @@
 }
 
 .codelens-input:focus {
-  outline: 2px solid var(--cl-primary);
-  outline-offset: 1px;
-  border-color: transparent;
+  outline: none;
+  border-color: var(--cl-hairline-strong);
   background: rgba(255, 255, 255, 0.10);
 }
 

@@ -5,14 +5,6 @@ function showPanel(button, data, isLoading, onClose) {
   const panel = document.createElement("div");
   panel.id = "codelens-panel";
 
-  const header = document.createElement("div");
-  header.className = "codelens-header";
-
-  const title = document.createElement("span");
-  title.className = "codelens-title";
-  title.textContent = "CodeLens";
-  header.appendChild(title);
-
   const closeBtn = document.createElement("button");
   closeBtn.className = "codelens-close";
   closeBtn.textContent = "✕";
@@ -20,9 +12,7 @@ function showPanel(button, data, isLoading, onClose) {
     if (onClose) onClose();
     panel.remove();
   });
-  header.appendChild(closeBtn);
-
-  panel.appendChild(header);
+  panel.appendChild(closeBtn);
 
   const body = document.createElement("div");
   body.className = "codelens-body";

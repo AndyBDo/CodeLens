@@ -14,18 +14,11 @@ function showSetupMenu() {
   menu.className = "codelens-setup-menu";
   overlay.appendChild(menu);
 
-  const header = document.createElement("div");
-  header.className = "codelens-header";
-  const title = document.createElement("span");
-  title.className = "codelens-title";
-  title.textContent = "CodeLens Setup";
-  header.appendChild(title);
   const closeBtn = document.createElement("button");
   closeBtn.className = "codelens-close";
   closeBtn.textContent = "✕";
   closeBtn.addEventListener("click", () => overlay.remove());
-  header.appendChild(closeBtn);
-  menu.appendChild(header);
+  menu.appendChild(closeBtn);
 
   const body = document.createElement("div");
   body.className = "codelens-body";
